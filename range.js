@@ -1,6 +1,6 @@
 /**
- * Range - v1.0.0
- * Copyright 2020 Abel Brencsan
+ * Range - v1.1.0
+ * Copyright 2021 Abel Brencsan
  * Released under the MIT License
  */
 
@@ -165,13 +165,6 @@ Range.prototype = function () {
 			}
 			this.isInitialized = false;
 			if (this.destroyCallback) this.destroyCallback.call(this);
-		},
-
-		/**
-		 * Get value of "isInitialized" to be abe to check range is initialized. (public)
-		 */
-		getIsInitialized: function() {
-			return this.isInitialized;
 		}
 	};
 
@@ -181,8 +174,7 @@ Range.prototype = function () {
 		stepByValue: range.stepByValue,
 		setValue: range.setValue,
 		getValue: range.getValue,
-		destroy: range.destroy,
-		getIsInitialized: range.getIsInitialized
+		destroy: range.destroy
 	};
 
 }();
