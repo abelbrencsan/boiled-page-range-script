@@ -1,36 +1,43 @@
 /**
- * Range - v1.1.0
- * Copyright 2021 Abel Brencsan
+ * Range
+ * Copyright 2024 Abel Brencsan
  * Released under the MIT License
  */
-
-var Range = function(options) {
+const Range = function(options) {
 
 	'use strict';
 
 	// Test required options
-	if (typeof options.input !== 'object') throw 'Range "input" option must be an object';
-	if (typeof options.triggers == 'object') {
-		for (var i = 0; i < options.triggers.length; i++) {
-			if (typeof options.triggers[i].element !== 'object') throw 'Range trigger "element" option must be an object';
-			if (typeof options.triggers[i].value !== 'number') throw 'Range trigger "value" option must be a number';
+	if (!(options.input instanceof HTMLInputElement)) {
+		throw 'Range "input" must be an `HTMLInputElement`';
+	}
+	if (!(options.triggers instanceof Array)) {
+		throw 'Range "triggers" must be an `Array`';
+	}
+	for (let i = 0; i < options.triggers.length; i++) {
+		if (!(options.triggers[i].element instanceof HTMLButtonElement)) {
+			throw 'Range trigger "element" must be an `HTMLButtonElement`';
+		}
+		if (typeof options.triggers[i].value !== 'number') {
+			throw 'Range trigger "value" must be a number';
 		}
 	}
 
 	// Default range instance options
-	var defaults = {
+	let defaults = {
 		input: null,
 		indicator: null,
 		triggers: [],
 		locale: 'en-US',
+		indicatorFormatter: null,
 		initCallback: null,
 		stepCallback: null,
 		valueIsChangedCallback: null,
-		destroyCallback: null
+		destroyCallback: null,
 	};
 
 	// Extend range instance options with defaults
-	for (var key in defaults) {
+	for (let key in defaults) {
 		this[key] = (options.hasOwnProperty(key)) ? options[key] : defaults[key];
 	}
 
@@ -46,106 +53,128 @@ Range.prototype = function () {
 
 	'use strict';
 
-	var range = {
+	let range = {
 
 		/**
-		* Initialize range. It gets minimum, maximum and step attributes of range input, creates events relevant to range. (public)
+		* Initialize range.
+		* 
+		* @public
 		*/
 		init: function() {
 			if (this.isInitialized) return;
-			var step, min, max;
 			this.handleEvent = function(event) {
 				range.handleEvents.call(this, event);
 			};
+			this.input.addEventListener('input', this);
+			for (let i = 0; i < this.triggers.length; i++) {
+				this.triggers[i].element.addEventListener('click', this);
+			}
 			if (this.input.hasAttribute('step')) {
-				step = parseFloat(this.input.getAttribute('step'));
+				let step = parseFloat(this.input.getAttribute('step'));
 				if (!isNaN(step)) {
 					this.step = step;
 				}
 			}
 			if (this.input.hasAttribute('max')) {
-				max = Number(this.input.getAttribute('max'));
+				let max = Number(this.input.getAttribute('max'));
 				if (!isNaN(max)) {
 					this.max = max;
 				}
 			}
 			if (this.input.hasAttribute('min')) {
-				min = Number(this.input.getAttribute('min'));
-				if (!isNaN(max)) {
+				let min = Number(this.input.getAttribute('min'));
+				if (!isNaN(min)) {
 					this.min = min;
 				}
 			}
-			this.input.addEventListener('input', this);
-			this.input.addEventListener('blur', this);
-			for (var i = 0; i < this.triggers.length; i++) {
-				this.triggers[i].element.addEventListener('click', this);
-			}
 			range.updateIndicator.call(this);
-			if (this.initCallback) this.initCallback.call(this);
 			this.isInitialized = true;
+			if (this.initCallback) this.initCallback.call(this);
 		},
 
 		/**
-		* Update current range input value inside indicator. (public)
-		*/
-		updateIndicator: function() {
-			if (this.indicator) {
-				this.indicator.innerHTML = Number(this.input.value).toLocaleString(this.locale);
-			}
-		},
-
-		/**
-		* Increment or decrement range input by given value. (public)
-		* @param value number
+		* Increase or decrease range input by given value.
+		* 
+		* @public
+		* @param {number} value
 		*/
 		stepByValue: function(value) {
-			if (Number(this.input.value) + (value * this.step) > this.max) {
-				range.setValue.call(this, this.max);
-			}
-			else if (Number(this.input.value) + (value * this.step) < this.min) {
-				range.setValue.call(this, this.min);
-			}
-			else {
-				this.input.stepUp(value);
-				range.updateIndicator.call(this);
-				if (this.valueIsChangedCallback) this.valueIsChangedCallback.call(this);
-			}
+			let currValue = range.getValue.call(this);
+			let newValue = currValue + (value * this.step);
+			range.setValue.call(this, newValue);
 			if (this.stepCallback) this.stepCallback.call(this);
 		},
 
 		/**
-		* Set range input to given value. (public)
-		* @param value number
+		* Set given value for range input.
+		* 
+		* @public
+		* @param {number} value
 		*/
 		setValue: function(value) {
-			this.input.value = value;
-			range.updateIndicator.call(this);
-			if (this.valueIsChangedCallback) this.valueIsChangedCallback.call(this);
+			if (value > this.max) {
+				this.input.value = this.max;
+			}
+			else if (value < this.min) {
+				this.input.value = this.min;
+			} else {
+				this.input.value = value;
+			}
+			range.valueIsChanged.call(this);
 		},
 
 		/**
-		* Get current range input value. (public)
+		* Get current value of range input.
+		* 
+		* @public
 		*/
 		getValue: function() {
 			return Number(this.input.value);
 		},
 
 		/**
-		* Handle events. (private)
-		* On trigger click: Step range input by trigger's value multiplied by input's `step` value.
-		* On input or blur: Update indicator.
+		* Update indicator by current range input value.
+		* 
+		* @public
+		*/
+		updateIndicator: function() {
+			if (!this.indicator) return;
+			let currValue = range.getValue.call(this);
+			if (this.indicatorFormatter) {
+				let formatted = this.indicatorFormatter.call(this, currValue);
+				this.indicator.innerHTML = formatted;
+			} else {
+				let formatted = currValue.toLocaleString(this.locale);
+				this.indicator.innerHTML = formatted;
+			}
+		},
+
+		/**
+		* Range input value is changed.
+		* 
+		* @private
+		*/
+		valueIsChanged: function() {
+			range.updateIndicator.call(this);
+			if (this.valueIsChangedCallback) this.valueIsChangedCallback.call(this);
+		},
+
+		/**
+		* Handle events.
+		* On trigger click: step range input by trigger's value.
+		* On range input change: update indicator.
+		* 
+		* @public
 		* @param event object
 		*/
 		handleEvents: function(event) {
-			if (event.type == 'input' || event.type == 'blur') {
+			if (event.type == 'input') {
 				if (event.target == this.input) {
-					range.updateIndicator.call(this);
-					if (this.valueIsChangedCallback) this.valueIsChangedCallback.call(this);
+					range.valueIsChanged.call(this);
 				}
 			}
 			else if (event.type == 'click') {
-				event.preventDefault();
-				for (var i = 0; i < this.triggers.length; i++) {
+				for (let i = 0; i < this.triggers.length; i++) {
 					if (event.target == this.triggers[i].element) {
 						range.stepByValue.call(this, this.triggers[i].value);
 					}
@@ -154,15 +183,19 @@ Range.prototype = function () {
 		},
 
 		/**
-		* Destroy range. It removes events relevant to range. (public)
+		* Destroy range.
+		* 
+		* @public
 		*/
 		destroy: function() {
 			if (!this.isInitialized) return;
 			this.input.removeEventListener('input', this);
-			this.input.removeEventListener('blur', this);
-			for (var i = 0; i < this.triggers.length; i++) {
+			for (let i = 0; i < this.triggers.length; i++) {
 				this.triggers[i].element.removeEventListener('click', this);
 			}
+			this.step = 1;
+			this.min = 0;
+			this.max = 100;
 			this.isInitialized = false;
 			if (this.destroyCallback) this.destroyCallback.call(this);
 		}

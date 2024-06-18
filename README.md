@@ -45,15 +45,15 @@ Option| Type | Default | Required | Description
 
 ### Initialize range
 
-`init()` - Initialize range. It gets minimum, maximum and step attributes of range input, creates events relevant to range.
+`init()` - Initialize range.
 
 ### Update indicator
 
-`updateIndicator()` - Update current range input value inside indicator. 
+`updateIndicator()` - Update indicator by current range input value.
 
 ### Step range input by given value
 
-`stepByValue(value)` - Increment or decrement range input by given value.
+`stepByValue(value)` - Increase or decrease range input by given value.
 
 Parameter | Type | Required | Description
 ----------|------|----------|------------
@@ -61,7 +61,7 @@ Parameter | Type | Required | Description
 
 ### Set input value
 
-`setValue(value)` - Set range input to given value.
+`setValue(value)` - Set given value for range input.
 
 Parameter | Type | Required | Description
 ----------|------|----------|------------
@@ -69,15 +69,11 @@ Parameter | Type | Required | Description
 
 ### Get range input value
 
-`getValue()` - Get current range input value.
+`getValue()` - Get current value of range input.
 
 ### Destroy range
 
-`destroy()` - Destroy range. It removes events relevant to range.
-
-### Check range is initialized or not
-
-`getIsInitialized()` - Check range is initialized or not. It returns `true` when it is already initialized, `false` if not.
+`destroy()` - Destroy range.
 
 ## Examples
 
