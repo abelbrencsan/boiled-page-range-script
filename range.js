@@ -32,7 +32,8 @@ const Range = function(options) {
 		indicatorFormatter: null,
 		initCallback: null,
 		stepCallback: null,
-		valueIsChangedCallback: null,
+		isValueChangedCallback: null,
+		isInputChangedCallback: null,
 		destroyCallback: null,
 	};
 
@@ -120,13 +121,14 @@ Range.prototype = function () {
 			} else {
 				this.input.value = value;
 			}
-			range.valueIsChanged.call(this);
+			range.isValueChanged.call(this);
 		},
 
 		/**
 		* Get current value of range input.
 		* 
 		* @public
+		* @return {number}
 		*/
 		getValue: function() {
 			return Number(this.input.value);
@@ -150,13 +152,22 @@ Range.prototype = function () {
 		},
 
 		/**
-		* Range input value is changed.
+		* Range input value has been changed.
 		* 
 		* @private
 		*/
-		valueIsChanged: function() {
+		isValueChanged: function() {
+			if (this.isValueChangedCallback) this.isValueChangedCallback.call(this);
 			range.updateIndicator.call(this);
-			if (this.valueIsChangedCallback) this.valueIsChangedCallback.call(this);
+		},
+
+		/**
+		* Range input has been changed.
+		* 
+		* @private
+		*/
+		isInputChanged: function() {
+			if (this.isInputChangedCallback) this.isInputChangedCallback.call(this);
 		},
 
 		/**
@@ -170,7 +181,8 @@ Range.prototype = function () {
 		handleEvents: function(event) {
 			if (event.type == 'input') {
 				if (event.target == this.input) {
-					range.valueIsChanged.call(this);
+					range.isValueChanged.call(this);
+					range.isInputChanged.call(this);
 				}
 			}
 			else if (event.type == 'click') {
